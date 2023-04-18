@@ -15,7 +15,7 @@ COAP_SERVER_ADDRESS = config('coap_server_address', None)
 COAP_PORT = config('coap_port', None)
 
 
-def the_great_infinity():
+async def the_great_infinity():
     """
     Get data from the Arduino. Use the Post function to send the data to coap_server
     Server is hosted in the cloud
