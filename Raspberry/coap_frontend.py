@@ -33,7 +33,10 @@ async def the_great_infinity():
         data = " ".join(str(item) for item in data).encode()
 
         # send the data
-        post(data)
+        try:
+            await post(data)
+        except aiocoap.error.NetworkError:
+            print("Err: server is unavailable!")
 
 
 async def post(payload: bytes):
