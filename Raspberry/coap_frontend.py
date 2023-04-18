@@ -26,6 +26,7 @@ async def the_great_infinity():
         sys.exit("Err: couldn't open port!")
 
     while True:
+        print(ser.readline().decode())
         data = ser.readline().decode().strip().split(',')
         data = list(map(float, data[:6])) + [int(data[6])]
 
