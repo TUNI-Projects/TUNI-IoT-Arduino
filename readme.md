@@ -10,7 +10,8 @@ This repository contains the IoT Endpoints codes. `Arduino` folder contains the 
 
 1. Install python virtual env.
 2. `pip install -r requirements.txt` to install the packages.
-3. `python coap_frontend.py` to run the CoAP Client.
+3. Copy `.env.example` file to create a new `.env` file and setup the variables.
+4. `python coap_frontend.py` to run the CoAP Client.
 
 ### Contributor
 
