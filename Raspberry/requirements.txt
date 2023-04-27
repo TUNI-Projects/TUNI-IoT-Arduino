@@ -1,4 +1,7 @@
 aiocoap==0.4.7
 asyncio==3.4.3
+cffi==1.15.1
+cryptography==40.0.2
+pycparser==2.21
 pyserial==3.5
 python-decouple==3.8
