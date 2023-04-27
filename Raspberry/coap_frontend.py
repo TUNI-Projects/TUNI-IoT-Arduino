@@ -1,9 +1,14 @@
+import os
 import asyncio
 import aiocoap
 from decouple import config
 import sys
 from datetime import datetime
 import serial
+
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import load_ssh_public_key
 
 
 """
@@ -28,16 +33,49 @@ async def the_great_infinity():
     while True:
         print(ser.readline().decode())
         data = ser.readline().decode().strip().split(',')
-        data = list(map(float, data[:6])) + [int(data[6])]
-
-        # made a single payload line, encoded it
-        data = " ".join(str(item) for item in data).encode()
-
-        # send the data
         try:
-            await post(data)
-        except aiocoap.error.NetworkError:
-            print("Err: server is unavailable!")
+            data = list(map(float, data[:6])) + [int(data[6])]
+
+            # made a single payload line, encoded it
+            data = " ".join(str(item) for item in data).encode()
+
+            # send the data
+            try:
+                await post(data)
+            except aiocoap.error.NetworkError:
+                print("Err: server is unavailable!")
+        except IndexError:
+            # There could be a possible index error, if any of the sensor misses
+            # it will pass for now.
+            pass
+
+
+async def encrypt(data: bytes):
+    """encrypt the data using public key encryption system.
+    if there's no public key available, it will send the data as it is.
+
+    Args:
+        data (bytes): _description_
+    """
+    filename = "awesome_secret.pub"
+    directory = "ssh_keys"
+    path = os.path.join(directory, filename)
+    if not os.path.isfile(path):
+        return data
+    else:
+        with open(os.path.join(directory, filename), "rb") as key_file:
+            ssh_key_data = key_file.read()
+            loaded_public_key = load_ssh_public_key(ssh_key_data)
+
+        encrypted_data = loaded_public_key.encrypt(
+            data,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return encrypted_data
 
 
 async def post(payload: bytes):
@@ -49,6 +87,7 @@ async def post(payload: bytes):
         payload (bytes): byte payload that includes accelorometer, gyro and heartbeat all in 1 line
     """
     # Create a context and a request
+    payload = await encrypt(payload)  # this encrypt the data, probably
     context = await aiocoap.Context.create_client_context()
     request = aiocoap.Message(code=aiocoap.POST)
 
@@ -59,13 +98,12 @@ async def post(payload: bytes):
     # Set the request payload
     request.payload = payload
 
-    # Send the request and wait for the response
+    # # Send the request and wait for the response
     response = await context.request(request).response
 
     # Print the response payload
     now = datetime.utcnow()
     print('{}: {}: {}'.format(now, response.code, response.payload))
-
 
 if __name__ == "__main__":
     if COAP_SERVER_ADDRESS is None or COAP_PORT is None:
